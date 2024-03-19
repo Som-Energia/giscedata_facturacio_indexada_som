@@ -92,14 +92,15 @@ Where:
 * **pmd**: prmdiari
 * **perdues**: perdxxxxx
 
-## PHF BALEARES formula
+## PHF CANARIAS formula
 
- `PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K + D] + PA + CA`
+ `PHF = (1 + IMU) * [(SPHDEM - SPHAUTO + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K + D] + PA + CA`
 
 Where:
 
 * **IMU**: Impost Municipal [%]
 * **SPHDEM**:  Precio Medio de Demanda en los sistemas no peninsulares [€/MWh]
+* **SPHAUTO**:  TODO: Descripción del Sphauto
 * **PC_REE**: Pagos por capacidad según REE [€/kWh]
 * **SI**: Precio Servicio Interrumpibilidad [€/MWh]
 * **POS**: Preu Operació Sistema (REE) [€/MWh]
@@ -137,12 +138,13 @@ Where:
 
 ## PHF BALEARES formula
 
- `PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K + D] + PA + CA`
+ `PHF = (1 + IMU) * [(SPHDEM - SPHAUTO + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K + D] + PA + CA`
 
 Where:
 
 * **IMU**: Impost Municipal [%]
 * **SPHDEM**:  Precio Medio de Demanda en los sistemas no peninsulares [€/MWh]
+* **SPHAUTO**:  TODO: Descripción del Sphauto
 * **PC_REE**: Pagos por capacidad según REE [€/kWh]
 * **SI**: Precio Servicio Interrumpibilidad [€/MWh]
 * **POS**: Preu Operació Sistema [€/MWh]

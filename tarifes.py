@@ -294,7 +294,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_balears(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = (1 + IMU) * [(SPHDEM - SPHAUTO + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -315,6 +315,10 @@ class TarifaPoolSOM(TarifaPool):
         filename = 'SphdemDD_{}'.format(SUBSYSTEMS_SPHDEM[self.geom_zone])
         classname = globals()[filename]
         sphdem = classname('C2_%(filename)s_%(postfix)s' % locals(), esios_token)  # [€/MWh]
+        # Precio compensacion
+        filename = 'Sphauto_{}'.format(SUBSYSTEMS_SPHDEM[self.geom_zone])
+        classname = globals()[filename]
+        sphauto = classname('C2_%(filename)s_%(postfix)s' % locals(), esios_token)  # [€/MWh]
         # Pagos por capacidad
         filename = 'Sprpcap{}_{}'.format(self.code.replace('.', ''), SUBSYSTEMS_SPHDEM[self.geom_zone])
         classname = globals()[filename]
@@ -340,7 +344,7 @@ class TarifaPoolSOM(TarifaPool):
         # peajes y cargos
         pa = self.get_peaje_component(start_date, holidays)  # [€/kWh]
 
-        A = ((sphdem + pc3_ree + si + ree) * 0.001)
+        A = ((sphdem - sphauto + pc3_ree + si + ree) * 0.001)
         B = (1 + (perdues * 0.01))
         C = A * B
         D = (fe * 0.001) + k + d
@@ -365,7 +369,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_canaries(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = (1 + IMU) * [(SPHDEM - SPHAUTO + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -386,6 +390,10 @@ class TarifaPoolSOM(TarifaPool):
         filename = 'SphdemDD_{}'.format(SUBSYSTEMS_SPHDEM[self.geom_zone])
         classname = globals()[filename]
         sphdem = classname('C2_%(filename)s_%(postfix)s' % locals(), esios_token)  # [€/MWh]
+        # Precio compensacion
+        filename = 'Sphauto_{}'.format(SUBSYSTEMS_SPHDEM[self.geom_zone])
+        classname = globals()[filename]
+        sphauto = classname('C2_%(filename)s_%(postfix)s' % locals(), esios_token)  # [€/MWh]
         # Pagos por capacidad
         filename = 'Sprpcap{}_{}'.format(self.code.replace('.', ''), SUBSYSTEMS_SPHDEM[self.geom_zone])
         classname = globals()[filename]
@@ -411,7 +419,7 @@ class TarifaPoolSOM(TarifaPool):
         # peajes y cargos
         pa = self.get_peaje_component(start_date, holidays)  # [€/kWh]
 
-        A = ((sphdem + pc3_ree + si + ree) * 0.001)
+        A = ((sphdem - sphauto + pc3_ree + si + ree) * 0.001)
         B = (1 + (perdues * 0.01))
         C = A * B
         D = (fe * 0.001) + k + d
