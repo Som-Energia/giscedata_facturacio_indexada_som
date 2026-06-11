@@ -244,8 +244,8 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc(self, curve, start_date):
         '''
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + POS + [PC3] + OMIE_REE ) * (1 + Perdidas) +
-              K + D + FONDO_EFICIENCIA ] + PA
+        PHF = [((PRMNCUR - PC3_REE) + PC3_BOE + OMIE_REE ) * (1 + Perdidas) + K + D +
+              FONDO_EFICIENCIA] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -325,7 +325,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_peninsula(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + PC + POS + OMIE_REE + H) * (1 + Perdidas) + FNEE + K + D] + PA
+        PHF = [(PMD + PC + POS + SI + OMIE_REE + H) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -423,7 +423,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_peninsula_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + PC + SC + DSV + OMIE_REE + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA
+        PHF = [(PMD + PC + POS + DSV + GDOS + OMIE_REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -567,7 +567,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_balears(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = [(SPHDEM + PC_REE + SI + REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -638,7 +638,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_balears_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + POS + DSV + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA + CA
+        PHF = [(PMD + PC + POS + DSV + GDOS + OMIE_REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -757,7 +757,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_canaries(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = [(SPHDEM + PC_REE + SI + REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -828,7 +828,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_canaries_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + POS + DSV + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA + CA
+        PHF = [(SPHDEM + PC_REE + DSV + REE + GDOS) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -948,7 +948,7 @@ class TarifaPoolSOM(TarifaPool):
         """
         Calcs component PHF as:
 
-        PHF = (1 + IMU) * [(Prm + PMAJ + Pc + CAD + DSV + POsOm + I) * (1 + Perd)] + Ptd + Ca + F
+        PHF = [(PMD + PC + POS + DSV + SI + OMIE_REE) * (1 + Perdidas) * (1 + IMU) + K + D + PA
 
         :param curve: Component curve
         :param start_date: component start date
