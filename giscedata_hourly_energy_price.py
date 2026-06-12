@@ -21,7 +21,7 @@ class GiscedataNextDaysEnergyPrice(osv.osv):
             cursor, uid, tarifa_id, data_inici, geom_zone, context=context
         )
 
-        llista_preu_id = context.get('pricelist_id')
+        llista_preu_id = self.get_pricelist_id(cursor, uid, geom_zone, tarifa_id, context=context)
         if not llista_preu_id:
             raise osv.except_osv('Error', 'No s\'ha indicat cap llista de preus.')
 
