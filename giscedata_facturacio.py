@@ -24,7 +24,7 @@ class GiscedataFacturacioFacturador(osv.osv):
         pricelist_obj = self.pool.get('product.pricelist')
         polissa_obj = self.pool.get('giscedata.polissa')
         imd_obj = self.pool.get('ir.model.data')
-        reganecu_obj = self.pool.get('giscedata.reganecu')
+        # reganecu_obj = self.pool.get('giscedata.reganecu')
 
         # Afegim els productes nous
         gdos_som = imd_obj.get_object_reference(
@@ -61,12 +61,12 @@ class GiscedataFacturacioFacturador(osv.osv):
                 res[date_version]['pauvi'] = pricelist_obj.price_get(
                     cursor, uid, [llista_preu_id], pauvi, 1, context=ctx
                 )[llista_preu_id]
-                res[date_version]['bs3qh'] = reganecu_obj.get_reganecu_components_between_dates(
-                    cursor, uid, data_inici, data_final, 'BS3', context=ctx
-                )
-                res[date_version]['rad3qh'] = reganecu_obj.get_reganecu_components_between_dates(
-                    cursor, uid, data_inici, data_final, 'RAD3', context=ctx
-                )
+                # res[date_version]['bs3qh'] = reganecu_obj.get_reganecu_components_between_dates(
+                #     cursor, uid, data_inici, data_final, 'BS3', context=ctx
+                # )
+                # res[date_version]['rad3qh'] = reganecu_obj.get_reganecu_components_between_dates(
+                #     cursor, uid, data_inici, data_final, 'RAD3', context=ctx
+                # )
 
                 if pricelist_obj.browse(cursor, uid, llista_preu_id).indexed_formula == u'Indexada Península':
                     # Fem un browse amb la data final per obtenir quina tarifa té
