@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
+    <data noupdate="1">
         <record model="giscemisc.facturacio.indexed.formula" id="facturacio_indexada_base.indexed_formula_indexada">
             <field name="formula">[((PRMNCUR - PC3_REE) + PC3_BOE + OMIE_REE ) * (1 + Perdidas) + K + D + FONDO_EFICIENCIA] * (1 + IMU) + PA</field>
         </record>
@@ -38,4 +39,5 @@
             <field name="method">phf_calc_canaries_2024</field>
             <field name="formula">[(SPHDEM + PC_REE + DSV + REE + GDOS) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA</field>
         </record>
+    </data>
 </openerp>

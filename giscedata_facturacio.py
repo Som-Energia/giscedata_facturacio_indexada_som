@@ -68,7 +68,7 @@ class GiscedataFacturacioFacturador(osv.osv):
                 #     cursor, uid, data_inici, data_final, 'RAD3', context=ctx
                 # )
 
-                if pricelist_obj.browse(cursor, uid, llista_preu_id).indexed_formula == u'Indexada Península':
+                if pricelist_obj.browse(cursor, uid, llista_preu_id).indexed_formula.name == u'Indexada Península':
                     # Fem un browse amb la data final per obtenir quina tarifa té
                     polissa = polissa_obj.browse(cursor, uid, polissa_id, context=ctx)
                     res[date_version]['h'] = polissa.coeficient_h * 0.001  # H is expressed in €/MWh in contract
