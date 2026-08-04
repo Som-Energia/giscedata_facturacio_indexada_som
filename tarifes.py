@@ -2,7 +2,7 @@
 from libfacturacioatr.pool.tarifes import *
 from libfacturacioatr.tarifes import *
 
-import osv.osv
+from osv import osv
 
 EXTRAPENINSULAR_FORMULAS = [
     'phf_calc_balears',
@@ -161,6 +161,8 @@ class TarifaPoolSOM(TarifaPool):
             if fallback:
                 if component == 'prmdiari':
                     component_inst = self.get_alter_prmdiari(day)
+                elif 'perdqh' in component:
+                    component_inst = self.perdclassqh('C2_%(component)s_%(postfix)s' % locals(), self.conf['esios_token'], ignore_cache_timeout=fallback)
                 else:
                     component_inst = Component(datetime.strptime(data_inici, "%Y-%m-%d"))
             else:
@@ -487,7 +489,7 @@ class TarifaPoolSOM(TarifaPool):
             perdues = self.perdclass('C2_%(fname)s_%(postfix)s' % locals(), esios_token)  # [%]
         else:
             fname = self.perdclassqh.name
-            perdues = self.perdclassqh('C2_%(fname)s_%(postfix)s' % locals(), esios_token)  # [%]
+            perdues = self.get_component_with_fallback(fname, start_date_str, end_date_str, day, fallback=preu_dema)  # [%]
 
         # Prdemcad
         prdemcad = self.get_component_with_fallback('prdemcad', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
