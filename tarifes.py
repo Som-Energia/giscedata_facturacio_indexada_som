@@ -4,6 +4,7 @@ from libfacturacioatr.tarifes import *
 
 from osv import osv
 
+
 EXTRAPENINSULAR_FORMULAS = [
     'phf_calc_balears',
     'phf_calc_canaries',
@@ -93,7 +94,7 @@ class TarifaPoolSOM(TarifaPool):
         if self.phf_function == 'phf_calc_auvi':
             # only if 'phf_calc_auvi' formula is used
             res = {}
-            res['curve_auvi'] = 'curve_autocons'
+            res['auvi_curve'] = 'curve_autocons'
             res['ph_auvi'] = 'G'
             res['pauvi'] = 'pauvi'
 
@@ -113,15 +114,15 @@ class TarifaPoolSOM(TarifaPool):
 
         # Formatarlo obtenint dia-hora i preu
         year = int(check_date[:4])
-        month = int(check_date[4:6])
+        month = int(check_date[5:7])
         comp_start_date = TIMEZONE.normalize(
             TIMEZONE.localize(datetime(year, month, 1) + timedelta(hours=1)))
 
         # APliquem el preu pel dia
         if comp_start_date.year > 2025 or (comp_start_date.year == 2025 and comp_start_date.month >= 10):
-            res = Component(comp_start_date)
-        else:
             res = ComponentQH(comp_start_date)
+        else:
+            res = Component(comp_start_date)
         next(csv_reader)
         for row in csv_reader:
             if row[0] == '*':
@@ -180,6 +181,8 @@ class TarifaPoolSOM(TarifaPool):
         }
         """
         res = super(TarifaPoolSOM, self).get_available_audit_coefs_gen()
+        res['curve_gen'] = 'curve'
+        res['curve_gen_qh'] = 'B'
         res['pvpc_gen'] = 'prmdiari'
         res['sphdem'] = 'sphdem'
         res['sphauto'] = 'sphauto'
@@ -199,14 +202,17 @@ class TarifaPoolSOM(TarifaPool):
         esios_token = self.conf['esios_token']
         holidays = self.conf['holidays']
 
+        # Curva cuarto-horaria
+        curve_qh = curve.get_component_qh_interpolated()
+        curve = curve * 0.001 # in kWh
+
         # REE
         postfix = ('%s_%s' % (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d")))
         if self.geom_zone == '1' or not self.geom_zone:
             # Precio medio diario
             # A partir de l'1 d'Octubre passa a ser QH
             if start_date.year > 2025 or (start_date.year == 2025 and start_date.month >= 10):
-                pmd_qh = Pmdiario('C2_pmdiario_%(postfix)s' % locals(), esios_token)  # [€/MWh]
-                prmdiari = pmd_qh.get_component_mean()
+                prmdiari = Pmdiario('C2_pmdiario_%(postfix)s' % locals(), esios_token)  # [€/MWh]
             else:
                 prmdiari = Prmdiari('C2_prmdiari_%(postfix)s' % locals(), esios_token)  # [€/MWh]
         else:
@@ -223,9 +229,25 @@ class TarifaPoolSOM(TarifaPool):
 
             prmdiari = sphdem - sphauto
 
+        # Let's transform them in ComponentsQH
+        # First, which components must be divided by 4
+        # (the rest will set same value on each quarter)
+        divided_var_names = []
+        excluded_var_names = ['curve']
+
+        for key, var in locals().items():
+            if (isinstance(var, Component)
+                    and not isinstance(var, ComponentQH)
+                    and key not in excluded_var_names
+            ):
+                new_var = self.transform_local_to_qh(var, key, divided_var_names)
+                exec('{} = new_var'.format(key))
+
         A = (prmdiari * 0.001)
-        B = curve * 0.001
+        B = curve_qh * 0.001
         component = A * B
+
+        component = component.get_component()
 
         audit_keys = self.get_available_audit_coefs_gen()
         for key in self.conf.get('audit_gen', []):
@@ -245,8 +267,8 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc(self, curve, start_date):
         '''
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + POS + [PC3] + OMIE_REE ) * (1 + Perdidas) +
-              K + D + FONDO_EFICIENCIA ] + PA
+        PHF = [((PRMNCUR - PC3_REE) + PC3_BOE + OMIE_REE ) * (1 + Perdidas) + K + D +
+              FONDO_EFICIENCIA] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -326,7 +348,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_peninsula(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + PC + POS + OMIE_REE + H) * (1 + Perdidas) + FNEE + K + D] + PA
+        PHF = [(PMD + PC + POS + SI + OMIE_REE + H) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -424,7 +446,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_peninsula_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(PMD + PC + SC + DSV + OMIE_REE + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA
+        PHF = [(PMD + PC + POS + DSV + GDOS + OMIE_REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -496,24 +518,30 @@ class TarifaPoolSOM(TarifaPool):
 
         # Componentes Desvios
         if start_date.year < 2024 or (start_date.year == 2024 and start_date.month < 12):
-            csdvbaj = self.get_component_with_fallback('csdvbaj', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
-            csdvsub = self.get_component_with_fallback('csdvsub', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
+            csdvbaj = self.get_component_with_fallback('codsvbaj', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
+            csdvsub = self.get_component_with_fallback('codsvsub', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
         else:
             csdvbaj = self.get_component_with_fallback('codsvbaqh', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
             csdvsub = self.get_component_with_fallback('codsvsuqh', start_date_str, end_date_str, day, fallback=preu_dema)  # [€/MWh]
 
-        # get first version date on version
-        first_version = self.conf.get('versions', {}).keys()[0]
+        # RAD3 and BS3
+        compodem = MonthlyCompodem('C2_monthlycompodem_%(postfix)s' % locals(), esios_token)
+        rad3 = compodem.get_component("RAD3")
+        bs3 = compodem.get_component("BS3")
 
-        # BS3 format QH from REGANECU
-        all_bs3 = self.conf.get('versions', {})[first_version]['bs3qh']
-        current_bs3 = [x for x in all_bs3 if x.start_date == start_date]
-        bs3 = current_bs3[0]
-
-        # RAD3 format QH from REGANECU
-        all_rad3 = self.conf.get('versions', {})[first_version]['rad3qh']
-        current_rad3 = [x for x in all_rad3 if x.start_date == start_date]
-        rad3 = current_rad3[0]
+        # NOT YET es comenta fins que es decideixi pasar a producció.
+        # # get first version date on version
+        # first_version = self.conf.get('versions', {}).keys()[0]
+        #
+        # # BS3 format QH from REGANECU
+        # all_bs3 = self.conf.get('versions', {})[first_version]['bs3qh']
+        # current_bs3 = [x for x in all_bs3 if x.start_date == start_date]
+        # bs3 = current_bs3[0]
+        #
+        # # RAD3 format QH from REGANECU
+        # all_rad3 = self.conf.get('versions', {})[first_version]['rad3qh']
+        # current_rad3 = [x for x in all_rad3 if x.start_date == start_date]
+        # rad3 = current_rad3[0]
 
         # Let's transform them in ComponentsQH
         # First, which components must be divided by 4
@@ -562,7 +590,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_balears(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = [(SPHDEM + PC_REE + SI + REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -633,7 +661,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_balears_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + POS + DSV + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA + CA
+        PHF = [(PMD + PC + POS + DSV + GDOS + OMIE_REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -752,7 +780,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_canaries(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + SI + POS) * (1 + Perdidas) + FNEE + K] + PA + CA
+        PHF = [(SPHDEM + PC_REE + SI + REE) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -823,7 +851,7 @@ class TarifaPoolSOM(TarifaPool):
     def phf_calc_canaries_2024(self, curve, start_date):
         """
         Calcs component PHF as:
-        PHF = (1 + IMU) * [(SPHDEM + PC_REE + POS + DSV + GDOs) * (1 + Perdidas) + FNEE + K + D] + PA + CA
+        PHF = [(SPHDEM + PC_REE + DSV + REE + GDOS) * (1 + Perdidas) + FNEE + K + D] * (1 + IMU) + PA
         :param curve: Component curve
         :param start_date: component start date
         :return: returns a component
@@ -943,7 +971,7 @@ class TarifaPoolSOM(TarifaPool):
         """
         Calcs component PHF as:
 
-        PHF = (1 + IMU) * [(Prm + PMAJ + Pc + CAD + DSV + POsOm + I) * (1 + Perd)] + Ptd + Ca + F
+        PHF = [(PMD + PC + POS + DSV + SI + OMIE_REE) * (1 + Perdidas) * (1 + IMU) + K + D + PA
 
         :param curve: Component curve
         :param start_date: component start date
@@ -1216,7 +1244,11 @@ class Tarifa61TDVEPoolSOM(TarifaPoolSOM, Tarifa61TDVEPool):
     pass
 
 
-class Tarifa62TDPoolSOM(TarifaPoolSOM, Tarifa61TDPool):
+class Tarifa62TDVEPoolSOM(TarifaPoolSOM, Tarifa62TDVEPool):
+    pass
+
+
+class Tarifa62TDPoolSOM(TarifaPoolSOM, Tarifa62TDPool):
     pass
 
 
@@ -1274,6 +1306,7 @@ TARIFFS_FACT = {
     '3.0TDVE': Tarifa30TDVEPoolSOM,
     '6.1TD': Tarifa61TDPoolSOM,
     '6.1TDVE': Tarifa61TDVEPoolSOM,
+    '6.2TDVE': Tarifa62TDVEPoolSOM,
     '6.2TD': Tarifa62TDPoolSOM,
     '6.3TD': Tarifa63TDPoolSOM,
     '6.4TD': Tarifa64TDPoolSOM,
