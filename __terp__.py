@@ -8,12 +8,18 @@
   "version": "0-dev",
   "author": "GISCE",
   "category": "Master",
-  "depends": ['base', 'giscedata_facturacio_indexada', 'giscedata_reganecu'],
+  "depends": [
+      'base',
+      'giscedata_facturacio_indexada',
+      'giscedata_reganecu',
+      'giscedata_repercussio_servei_ajust',
+  ],
   "init_xml": [],
   "demo_xml": ['giscedata_facturacio_indexada_som_demo.xml'],
   "update_xml": [
     'giscedata_polissa_view.xml',
     'giscedata_facturacio_indexada_som_data.xml',
+    'indexed_formula_data.xml',
   ],
   "active": False,
   "installable": True
