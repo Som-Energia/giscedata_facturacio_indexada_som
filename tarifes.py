@@ -539,9 +539,13 @@ class TarifaPoolSOM(TarifaPool):
 
         # RAD3 and BS3
         compodem = self.get_component_with_fallback('monthlycompodem', start_date_str, end_date_str, day, fallback=preu_dema)
-        if isinstance(compodem, Component):
-            rad3 = Component(start_date)
-            bs3 = Component(start_date)
+        if preu_dema:
+            if hasattr(compodem, "filename") and compodem.filename and "compodem" in compodem.filename:
+                rad3 = compodem.get_component("RAD3")
+                bs3 = compodem.get_component("BS3")
+            else:
+                rad3 = Component(start_date)
+                bs3 = Component(start_date)
         else:
             rad3 = compodem.get_component("RAD3")
             bs3 = compodem.get_component("BS3")
